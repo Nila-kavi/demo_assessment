@@ -1,0 +1,176 @@
+Create index.html: 
+<!DOCTYPE html> 
+<html> 
+<head> 
+<title>CI/CD Demo</title> 
+<style> 
+body{ 
+text-align:center; 
+font-family:Times New Roman; 
+background-color:#af0d0d; 
+} 
+h1{ 
+color:#0ef777; 
+} 
+</style> 
+</head> 
+<body> 
+<h1>CI/CD Pipeline Working</h1> 
+<h2>Deployed using Jenkins + Docker + Kubernetes</h2> 
+<p>This webpage is automatically deployed using a CI/CD pipeline.</p> 
+
+</body> 
+</html> 
+Create a Dockerfile 
+FROM nginx:latest 
+COPY index.html /usr/share/nginx/html/index.html 
+EXPOSE 80 
+deployment.yaml: 
+apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+name: html-demo 
+spec: 
+replicas: 2 
+selector: 
+matchLabels: 
+app: html-demo 
+template: 
+metadata: 
+labels: 
+app: html-demo 
+spec: 
+containers: - name: html-demo 
+image: swetab84/html-demo:latest 
+ports: - containerPort: 80 --- 
+apiVersion: v1 
+kind: Service 
+metadata: 
+name: html-demo-service 
+spec: 
+type: NodePort 
+selector: 
+app: html-demo 
+ports: - port: 80 
+targetPort: 80 
+nodePort: 30010
+
+Pipeline:  
+pipeline { 
+agent any 
+environment { 
+DOCKER_IMAGE = "swetab84/html-demo" 
+} 
+stages { 
+stage('Clone Code') { 
+steps { 
+git branch: 'main', 
+url: 'https://github.com/swetab-max/docker-example.git' 
+} 
+} 
+stage('Build Docker Image') { 
+steps { 
+bat 'docker build -t %DOCKER_IMAGE% .' 
+} 
+} 
+stage('Push Image') { 
+steps { 
+withCredentials([usernamePassword(credentialsId: 'dockerhub', 
+usernameVariable: 'USER', passwordVariable: 'PASS')]) { 
+bat 'docker login -u %USER% -p %PASS%' 
+bat 'docker push %DOCKER_IMAGE%' 
+} 
+} 
+} 
+stage('Deploy to Kubernetes') { 
+steps { 
+withCredentials([file(credentialsId: 'kuberconfig', variable: 
+'KUBECONFIG')]) { 
+bat ''' 
+set KUBECONFIG=%KUBECONFIG% 
+kubectl apply -f deployment.yaml --validate=false 
+''' 
+} 
+} 
+} 
+} 
+}
+
+
+MAVEN
+
+1.	CREATE A NEW REPOSITORY: SIMPLE-MAVEN-APPLICATION
+Create a file – pom.xml
+CODE:
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+ http://maven.apache.org/xsd/maven-4.0.0.xsd">
+ <modelVersion>4.0.0</modelVersion>
+ <groupId>com.example</groupId>
+ <artifactId>simple-maven-app</artifactId>
+ <version>1.0-SNAPSHOT</version>
+ 
+ <dependencies>
+   <dependency>
+       <groupId>junit</groupId>
+       <artifactId>junit</artifactId>
+       <version>4.13.2</version>
+       <scope>test</scope>
+   </dependency>
+ </dependencies>
+</project>
+COMMIT THE CHANGES
+
+THEN CREATE THE FOLLOWING FOLDER STRUCTURE
+src
+main/java/com/example/App.java
+main/java/com/example/AppTest.java
+
+ \
+FOR THE APP.JAVA PLEASE USE THE FOLLOWING CODE:
+package com.example;
+public class App {
+ public int add(int a, int b) {
+ return a + b;
+ }
+}
+COMMIT THE CHANGES
+
+FOR THE AppTest.JAVA use the FOLLOWING CODE:
+package com.example;
+import org.junit.Test;
+import static org.junit.Assert.*;
+public class AppTest {
+ @Test
+ public void testAdd() {
+ App app = new App();
+ assertEquals(5, app.add(2, 3));
+ }
+}
+COMMIT THE CHANGES
+
+THEN OPEN VSCODE:
+1.	CLONE YOUR GIT REPOSITORY IN VSCODE
+2.	In the TERMINAL type command: mvn clean test
+
+IN THE PIPELINE SCRIPT ADD THE FOLLOWING CODE:
+
+pipeline {
+ agent any
+ tools {
+ maven 'M3'
+ }
+ stages {
+ stage('Checkout Git') {
+ steps {
+ git branch: 'main',
+ url: 'https://github.com/balaganeshn/simple-maven-app'
+ }
+ }
+ stage('Build and Test') {
+ steps {
+ bat 'mvn clean test'
+ }
+ }
+ }
