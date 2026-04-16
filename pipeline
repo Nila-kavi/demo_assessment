@@ -56,3 +56,16 @@ pipeline {
     }
 }
 
+
+
+vs code
+
+git add .
+git commit -m "Added index, Dockerfile, deployment and Jenkinsfile"
+git push origin main
+
+
+terminal
+
+kubectl get pods          # Should show 2 replicas running
+kubectl get svc           # Check the NodePort service
